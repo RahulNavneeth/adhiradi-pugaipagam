@@ -17,7 +17,7 @@ jobs:
         id: lf
         run: |
           echo "Listing image files in the current repository"
-          find . -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.bmp" -o -iname "*.ppm" \) -print0 > image-files.txt
+          find . -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.bmp" -o -iname "*.ppm" \) -print0 > image-files.txt
           base64_files=$(base64 -w 0 < image-files.txt)
           echo "encoded_files=${base64_files}" >> "$GITHUB_OUTPUT"
 
