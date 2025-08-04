@@ -46,6 +46,7 @@ jobs:
             convert "$file" "$png_file"
             rm "$file"
           done < image-files.txt
+          rm image-files.txt
 
       - name: Configure Git
         run: |
