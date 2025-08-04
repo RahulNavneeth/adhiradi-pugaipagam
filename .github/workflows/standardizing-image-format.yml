@@ -1,0 +1,59 @@
+name: Standardizing image formats across the repository
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  list-files:
+    runs-on: ubuntu-latest
+    outputs:
+      encoded_files: ${{ steps.lf.outputs.encoded_files }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List image files in the current repository
+        id: lf
+        run: |
+          echo "Listing image files in the current repository"
+          find . -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.bmp" -o -iname "*.ppm" \) -print0 > image-files.txt
+          base64_files=$(base64 < image-files.txt)
+          echo "encoded_files=${base64_files}" >> "$GITHUB_OUTPUT"
+
+  converting-images:
+    needs: list-files
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ImageMagick
+        run: |
+          echo "Installing ImageMagick"
+          sudo apt update -y > /dev/null 2>&1 && sudo apt install imagemagick -y > /dev/null 2>&1
+
+      - name: Decode file list
+        run: |
+          echo "${{ needs.list-files.outputs.encoded_files }}" | base64 -d > image-files.txt
+
+      - name: Convert image files to PNG
+        run: |
+          echo "Beginning to convert image files to PNG"
+          while IFS= read -r -d '' file; do
+            echo "Converting '$file'"
+            png_file="${file%.*}.png"
+            convert "$file" "$png_file"
+            rm "$file"
+          done < image-files.txt
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push converted images
+        run: |
+          git add -A
+          git commit -m "Auto-convert images to PNG [skip ci]" || echo "No changes to commit"
+          git push origin main
